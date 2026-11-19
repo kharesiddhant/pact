@@ -19,16 +19,18 @@ export default function Chat(props: { data: Data; me: string; save: Save; onClos
   const [replyTo, setReplyTo] = useState<Message | null>(null)
   // The emoji panel is open for one message (its id), for the message being typed, or closed.
   const [picker, setPicker] = useState<string | 'compose' | null>(null)
-  const bottom = useRef<HTMLDivElement>(null)
+  const list = useRef<HTMLDivElement>(null)
   const input = useRef<HTMLInputElement>(null)
   const name = (userId: string | null) => data.members.find((m) => m.user_id === userId)?.display_name ?? 'Someone'
 
   const messages = data.messages.filter((m) => m.kind !== 'system')
   const target = messages.find((m) => m.id === picker)
   const count = messages.length
+  // Show the newest messages. (scrollIntoView would also scroll the dialog and the page behind it.)
+  const composing = picker === 'compose' // the panel shrinks the list, so jump back to the newest message
   useEffect(() => {
-    bottom.current?.scrollIntoView({ block: 'end' })
-  }, [count])
+    if (list.current) list.current.scrollTop = list.current.scrollHeight
+  }, [count, composing])
 
   async function send(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -68,8 +70,10 @@ export default function Chat(props: { data: Data; me: string; save: Save; onClos
   }
 
   return (
-    <Modal title="Discussion space" onClose={props.onClose}>
-      <div className={`flex flex-col gap-3 overflow-y-auto px-1 ${picker ? 'h-[32dvh]' : 'h-[55dvh]'}`}>
+    <Modal title="Discussion space" onClose={props.onClose} fill>
+      {/* Only this list scrolls. "relative" keeps the hidden screen-reader labels inside it, so they cannot
+          stretch the dialog; overscroll-contain stops scrolling from carrying on to the page behind. */}
+      <div ref={list} className="relative flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain px-1">
         {count === 0 && <p className="m-auto text-sm text-muted">No messages yet. Say something encouraging.</p>}
         {messages.map((m) => {
           if (m.kind === 'nudge') {
@@ -135,11 +139,10 @@ export default function Chat(props: { data: Data; me: string; save: Save; onClos
             </div>
           )
         })}
-        <div ref={bottom} />
       </div>
 
       {picker && (
-        <div className="mt-3 rounded-2xl bg-page p-2">
+        <div className="mt-3 shrink-0 rounded-2xl bg-page p-2">
           {target && (
             <div className="mb-1 flex items-center gap-3 px-2 py-1 text-sm text-muted">
               <span className="min-w-0 flex-1 truncate">
@@ -176,7 +179,7 @@ export default function Chat(props: { data: Data; me: string; save: Save; onClos
       )}
 
       {replyTo && (
-        <div className="mt-3 flex items-center gap-2 rounded-xl bg-page px-3 py-2 text-sm text-muted">
+        <div className="mt-3 flex shrink-0 items-center gap-2 rounded-xl bg-page px-3 py-2 text-sm text-muted">
           <span className="min-w-0 flex-1 truncate">
             Replying to {name(replyTo.user_id)}: {replyTo.body}
           </span>
@@ -185,7 +188,7 @@ export default function Chat(props: { data: Data; me: string; save: Save; onClos
           </button>
         </div>
       )}
-      <form onSubmit={send} className="mt-3 flex items-center gap-2">
+      <form onSubmit={send} className="mt-3 flex shrink-0 items-center gap-2">
         <input
           ref={input}
           name="body"

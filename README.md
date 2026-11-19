@@ -42,7 +42,7 @@ Post an update for the day: what you did, which tasks you finished, and photos. 
 
 ![An opened update with notes, two photos and a comment from the friend](docs/images/06-proof.webp)
 
-Open any update to see the notes, the photos and your friend's comments. Once an update is posted, its photos cannot be swapped or deleted. Photos are shrunk in the browser before upload, so the free storage lasts.
+Open any update to see the notes, the photos and your friend's comments. Once an update is posted, its photos cannot be swapped or deleted. Before upload, the browser shrinks each photo to 1600 pixels on its longest side and saves it as WebP (JPEG on Safari), usually under 200 KB, and strips its location data. The storage bucket refuses anything over 1 MB, so the free storage lasts.
 
 ### Cheer, nudge, reply
 
@@ -171,7 +171,7 @@ npm run build   # type-checks and builds the site into dist/
 - A bet is between two people.
 - There are no push or email notifications. The bell, the chime and the tab title work only while the app is open in a browser tab.
 - A "day" is the calendar day where the person posting the update is. To allow for time zones, an update can be dated one day before or after today's date in UTC, so the daily dots are a guide. The history shows when things really happened.
-- Free plans: Supabase gives 2 active projects, a 500 MB database and 1 GB of photo storage (photos are about 300 KB each after shrinking). Vercel's Hobby plan is for personal, non-commercial use.
+- Free plans: Supabase gives 2 active projects, a 500 MB database and 1 GB of photo storage (photos are usually under 200 KB each after shrinking, so about 5,000 or more). Vercel's Hobby plan is for personal, non-commercial use.
 
 ## Project structure
 

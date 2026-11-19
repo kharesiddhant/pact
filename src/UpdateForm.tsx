@@ -2,7 +2,10 @@ import { useState, type SubmitEvent } from 'react'
 import Modal from './Modal'
 import { supabase, today, type Data } from './supabase'
 
-/** Scales a photo down to 1600px and re-encodes it as JPEG, so the free storage tier lasts. */
+/**
+ * Scales a photo down to 1600px and re-encodes it, so the free storage tier lasts (usually under 200 KB).
+ * Re-encoding also drops the photo's metadata, such as its GPS location.
+ */
 async function shrink(file: File) {
   const image = await createImageBitmap(file)
   const scale = Math.min(1, 1600 / Math.max(image.width, image.height))
@@ -10,9 +13,13 @@ async function shrink(file: File) {
   canvas.width = Math.round(image.width * scale)
   canvas.height = Math.round(image.height * scale)
   canvas.getContext('2d')!.drawImage(image, 0, 0, canvas.width, canvas.height)
-  return new Promise<Blob>((resolve, reject) =>
-    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Could not read that image'))), 'image/jpeg', 0.8),
-  )
+  const encode = (type: string, quality: number) =>
+    new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Could not read that image'))), type, quality),
+    )
+  // WebP is about half the size of JPEG. A browser that cannot write WebP (Safari) returns a PNG instead; use JPEG there.
+  const webp = await encode('image/webp', 0.75)
+  return webp.type === 'image/webp' ? webp : encode('image/jpeg', 0.7)
 }
 
 /** "Update for the day": the only place where tasks get ticked. */
@@ -33,10 +40,9 @@ export default function UpdateForm(props: { data: Data; me: string; load: () => 
       if (files.length > 10) throw new Error('You can attach up to 10 photos to one update.')
       const images = await Promise.all(
         files.map(async (file) => {
-          const path = `${data.challenge.id}/${me}/${crypto.randomUUID()}.jpg`
-          const { error } = await supabase.storage
-            .from('updates')
-            .upload(path, await shrink(file), { contentType: 'image/jpeg' })
+          const photo = await shrink(file)
+          const path = `${data.challenge.id}/${me}/${crypto.randomUUID()}.${photo.type === 'image/webp' ? 'webp' : 'jpg'}`
+          const { error } = await supabase.storage.from('updates').upload(path, photo, { contentType: photo.type })
           if (error) throw error
           return path
         }),

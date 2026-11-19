@@ -367,10 +367,11 @@ create policy "remove own" on reactions for delete to authenticated
   using (user_id = auth.uid());
 
 -- ============ Image storage ============
--- Private bucket. Object path: <challenge_id>/<user_id>/<file>.jpg
+-- Private bucket. Object path: <challenge_id>/<user_id>/<file>.webp (or .jpg from Safari).
+-- The app shrinks photos to well under 1 MB before upload; the bucket refuses anything bigger or of another type.
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('updates', 'updates', false, 5242880, '{image/jpeg}')
+values ('updates', 'updates', false, 1048576, '{image/webp,image/jpeg}')
 on conflict (id) do nothing;
 
 create policy "pact members view images" on storage.objects for select to authenticated

@@ -41,6 +41,7 @@ export type Update = {
   title: string
   body: string
   images: string[]
+  created_at: string
 }
 export type Reaction = { message_id: string; user_id: string; emoji: string }
 export type Message = {

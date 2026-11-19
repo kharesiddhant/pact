@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type SubmitEvent } from 'react'
+import Bell from './Bell'
 import Chat from './Chat'
+import { chime, friendActivity, soundOn, unlockSound } from './notify'
 import Tasks from './Tasks'
 import UpdateForm from './UpdateForm'
 import {
@@ -87,10 +89,40 @@ export default function Challenge({ id, me }: { id: string; me: string }) {
 
   // While the chat is open, everything in it counts as seen.
   const seenKey = `seen:${id}`
+  const seenUpdatesKey = `seen-updates:${id}`
   const lastMessage = data?.messages.at(-1)?.created_at
   useEffect(() => {
     if (modal === 'chat' && lastMessage) localStorage.setItem(seenKey, lastMessage)
   }, [modal, lastMessage, seenKey])
+
+  // Notifications: the friend's new updates and messages (bell, chime, tab title).
+  const [, rerender] = useState(0)
+  const activity = data ? friendActivity(data, me) : []
+  const seenChat = localStorage.getItem(seenKey) ?? ''
+  const seenUpdates = localStorage.getItem(seenUpdatesKey) ?? ''
+  const isUnread = (a: { at: string; inChat: boolean }) => a.at > (a.inChat ? seenChat : seenUpdates)
+  const unreadCount = activity.filter(isUnread).length
+  const newest = activity[0]?.at ?? ''
+  const heard = useRef<string | null>(null)
+  useEffect(() => {
+    if (!data) return
+    if (heard.current !== null && newest > heard.current && soundOn()) chime()
+    heard.current = newest
+  }, [data, newest])
+  useEffect(() => {
+    addEventListener('pointerdown', unlockSound, { once: true })
+    addEventListener('keydown', unlockSound, { once: true })
+    return () => {
+      removeEventListener('pointerdown', unlockSound)
+      removeEventListener('keydown', unlockSound)
+    }
+  }, [])
+  useEffect(() => {
+    document.title = unreadCount ? `(${unreadCount}) Pact` : 'Pact'
+    return () => {
+      document.title = 'Pact'
+    }
+  }, [unreadCount])
 
   if (!data) {
     return (
@@ -112,9 +144,8 @@ export default function Challenge({ id, me }: { id: string; me: string }) {
   const end = start === null ? null : start + challenge.duration_days * DAY
   const running = end !== null && now < end
   const over = end !== null && now >= end
-  const seen = localStorage.getItem(seenKey) ?? ''
   // History entries ('system') are shown on this page, not in the chat, so they are not "unread".
-  const unread = data.messages.filter((m) => m.kind !== 'system' && m.user_id !== me && m.created_at > seen)
+  const unread = data.messages.filter((m) => m.kind !== 'system' && m.user_id !== me && m.created_at > seenChat)
 
   const finished = (userId: string) => {
     const tasks = data.milestones
@@ -146,6 +177,17 @@ export default function Challenge({ id, me }: { id: string; me: string }) {
         <h1 className="text-xl font-semibold tracking-tight">
           {friend ? `You and ${friend.display_name}` : 'New bet'}
         </h1>
+        <Bell
+          items={activity}
+          isUnread={isUnread}
+          name={friend?.display_name ?? 'Your friend'}
+          onOpen={() => {
+            if (lastMessage) localStorage.setItem(seenKey, lastMessage)
+            if (data.updates[0]) localStorage.setItem(seenUpdatesKey, data.updates[0].created_at)
+            rerender((n) => n + 1)
+          }}
+          onOpenChat={() => setModal('chat')}
+        />
       </header>
 
       <main className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[1fr_18rem_1fr] lg:grid-rows-[minmax(0,1fr)]">

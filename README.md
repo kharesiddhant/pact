@@ -48,7 +48,9 @@ Open any update to see the notes, the photos and your friend's comments. Once an
 
 ![The discussion space on two phones: a reply to a message, emoji reactions, and the emoji panel](docs/images/07-chat.webp)
 
-A chat for just the two of you. Reply to any message and react with emoji. When your friend goes quiet, press **Nudge** on their side of the main page. New messages and nudges show up as a badge on the main page.
+A chat for just the two of you. Reply to any message and react with emoji. When your friend goes quiet, press **Nudge** on their side of the main page.
+
+The bell at the top right lists your friend's new updates, messages and nudges. While the page is open, new activity also plays a soft chime (turn it off in the bell's panel) and shows a count in the browser tab's title.
 
 ### Nothing changes quietly
 
@@ -167,7 +169,7 @@ npm run build   # type-checks and builds the site into dist/
 ## Limits
 
 - A bet is between two people.
-- There are no push or email notifications. Nudges and new messages show up inside the app.
+- There are no push or email notifications. The bell, the chime and the tab title work only while the app is open in a browser tab.
 - A "day" is the calendar day where the person posting the update is. To allow for time zones, an update can be dated one day before or after today's date in UTC, so the daily dots are a guide. The history shows when things really happened.
 - Free plans: Supabase gives 2 active projects, a 500 MB database and 1 GB of photo storage (photos are about 300 KB each after shrinking). Vercel's Hobby plan is for personal, non-commercial use.
 
